@@ -20,6 +20,30 @@ ROOT = Path(__file__).parent
 load_dotenv(ROOT / ".env")
 app = FastAPI(title="TalentLens", docs_url=None, redoc_url=None)
 
+def local_draft(role: str) -> str:
+    title = role.strip().strip("., ")
+    return (f"{title}\n\nRole overview\nWe’re looking for a {title} to contribute to a collaborative team and deliver high-quality work that meets customer and business needs.\n\nResponsibilities\n• Plan and deliver work aligned with the goals of this role.\n• Collaborate with partners across the team and communicate progress clearly.\n• Use feedback and relevant data to improve outcomes.\n• Document decisions and share knowledge with teammates.\n\nRequired qualifications\n• Demonstrated experience relevant to {title.lower()}.\n• Strong communication, problem-solving, and collaboration skills.\n• Examples of delivering high-quality work in a related area.\n\nPreferred qualifications\n• Experience working with cross-functional teams.\n• A portfolio, project history, or work samples relevant to the role.\n\nPlease review and edit this starter description to reflect your actual responsibilities, qualifications, and workplace details.")
+
+def local_score(job_description: str, resume_text: str, filename: str) -> dict:
+    """Transparent local demo scorer based on term overlap, not a hiring decision."""
+    words = lambda value: set(re.findall(r"[a-z][a-z0-9+#.]{1,}", value.lower()))
+    job_terms = words(job_description)
+    resume_terms = words(resume_text)
+    ignored = {"with", "from", "that", "this", "will", "have", "your", "their", "about", "work", "years", "experience", "required", "preferred", "role", "team", "ability", "strong", "including", "using", "across", "such", "well", "more", "than", "into", "and", "the", "for", "are", "who", "looking", "contribute", "collaborative", "deliver", "high", "quality", "meets", "customer", "business", "needs", "responsibilities", "qualifications", "demonstrated", "relevant", "communication", "problem", "solving", "skills", "examples", "preferred", "plan", "aligned", "goals", "clear", "progress", "feedback", "data", "improve", "outcomes", "document", "decisions", "share", "knowledge", "related", "area", "experience", "cross", "functional", "portfolio", "project", "history", "samples", "actual", "reflect", "details", "overview", "looking", "strong", "team", "job", "title", "experience"}
+    relevant = job_terms - ignored
+    matched = sorted(relevant & resume_terms)
+    coverage = len(matched) / max(1, min(len(relevant), 18))
+    score = min(95, max(18, round(25 + coverage * 70)))
+    email = re.search(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", resume_text)
+    name_match = re.search(r"(?:name\s*[:\-][ \t]*)([A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){1,2})", resume_text, re.IGNORECASE)
+    name = name_match.group(1) if name_match else Path(filename).stem.replace("_", " ").replace("-", " ").title()
+    skills = matched[:8]
+    if matched:
+        summary = f"Local keyword scan found {len(matched)} job-related terms in the resume, including {', '.join(matched[:5])}. Review the original resume to verify context and experience; this estimate does not assess meaning or seniority."
+    else:
+        summary = "The local keyword scan found few direct term matches. Review the resume manually; equivalent skills may be described in different language."
+    return {"name": name[:100], "email": email.group(0) if email else "", "role": "Resume submitted", "score": score, "skills": skills, "summary": summary, "filename": filename}
+
 def extract_text(filename: str, content: bytes) -> str:
     suffix = Path(filename).suffix.lower()
     try:
@@ -40,14 +64,19 @@ def extract_text(filename: str, content: bytes) -> str:
 def index():
     return FileResponse(ROOT / "index.html")
 
+@app.get("/api/status")
+def status():
+    configured = bool(os.getenv("NVIDIA_API_KEY"))
+    return {"mode": "nvidia" if configured else "local_demo", "nvidia_configured": configured}
+
 @app.post("/api/draft-job")
 def draft_job(payload: dict = Body(...)):
     key = os.getenv("NVIDIA_API_KEY")
-    if not key:
-        raise HTTPException(503, "NVIDIA API key is not configured. Add NVIDIA_API_KEY to .env and restart the server.")
     role = str(payload.get("role", "")).strip()[:400]
     if len(role) < 3:
         raise HTTPException(422, "Enter a role title or a short description of the role.")
+    if not key:
+        return {"job_description": local_draft(role), "mode": "local_demo"}
     prompt = (
         "Draft a concise, realistic job description for this role: " + role + "\n\n"
         "Include a short role summary, 4-6 responsibilities, 4-6 required qualifications, and a few preferred qualifications. "
@@ -80,8 +109,6 @@ def draft_job(payload: dict = Body(...)):
 @app.post("/api/analyze")
 async def analyze(job_description: Annotated[str, Form()], resumes: Annotated[list[UploadFile], File()]):
     key = os.getenv("NVIDIA_API_KEY")
-    if not key:
-        raise HTTPException(503, "NVIDIA API key is not configured. Add NVIDIA_API_KEY to .env and restart the server.")
     if not job_description.strip():
         raise HTTPException(422, "Add a job description before analyzing.")
     if not resumes or len(resumes) > 20:
@@ -92,7 +119,13 @@ async def analyze(job_description: Annotated[str, Form()], resumes: Annotated[li
         if len(content) > 10 * 1024 * 1024:
             raise HTTPException(413, f"{file.filename} exceeds the 10 MB limit.")
         text = extract_text(file.filename or "resume.txt", content)
+        if not text.strip():
+            raise HTTPException(422, f"No readable text found in {file.filename}. For scanned PDFs, run OCR first or upload a text-based PDF.")
         candidates.append({"filename": file.filename, "text": text[:18000]})
+    if not key:
+        local_results = [local_score(job_description, candidate["text"], candidate["filename"]) for candidate in candidates]
+        local_results.sort(key=lambda candidate: candidate["score"], reverse=True)
+        return {"candidates": local_results, "mode": "local_demo"}
     prompt = {
         "job_description": job_description[:12000],
         "candidates": candidates,
