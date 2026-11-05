@@ -1,0 +1,31 @@
+SAMPLE RESUME — FICTIONAL CANDIDATE
+For product demonstration only. This is not a real person's information.
+
+Name: Maya Thompson
+Email: maya.thompson@example.com
+Location: Sample City
+
+SUMMARY
+Product designer with 6 years of experience creating user-centered B2B SaaS products. Combines qualitative research, interaction design, prototyping, and accessibility practices to help teams deliver clear and useful experiences.
+
+WORK EXPERIENCE
+Senior Product Designer | Orbit Analytics (fictional) | 2022–Present
+- Led end-to-end design for analytics dashboards used by operations teams.
+- Planned and conducted user interviews and usability testing; translated findings into product opportunities.
+- Built interactive prototypes in Figma and partnered with product managers and engineers through delivery.
+- Created and maintained a reusable design system, improving consistency across web products.
+- Improved keyboard navigation and WCAG accessibility in collaboration with engineering.
+
+Product Designer | Papertrail Software (fictional) | 2020–2022
+- Designed onboarding, search, and reporting experiences for a B2B SaaS platform.
+- Used task analysis, journey mapping, wireframes, and usability studies to refine workflows.
+- Presented design rationale and research findings to cross-functional stakeholders.
+
+EDUCATION
+BFA, Interaction Design | Sample State University | 2020
+
+SKILLS
+Product design, UX design, user research, usability testing, interaction design, Figma, prototyping, design systems, accessibility, WCAG, wireframing, journey mapping, B2B SaaS, data visualization, cross-functional collaboration.
+
+PORTFOLIO
+https://example.com/maya-thompson-portfolio
