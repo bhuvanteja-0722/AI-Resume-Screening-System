@@ -121,7 +121,8 @@ def draft_job(payload: dict = Body(...)):
         ], "temperature": 0.25, "reasoning_effort": "low", "stream": False}
     request_payload["max_completion_tokens" if config["provider"] == "groq" else "max_tokens"] = 600
     request = urllib.request.Request(config["url"], data=json.dumps(request_payload).encode(),
-        headers={"Authorization": f"Bearer {config['key']}", "Content-Type": "application/json"}, method="POST")
+        headers={"Authorization": f"Bearer {config['key']}", "Content-Type": "application/json",
+                 "User-Agent": "TalentLens/1.0"}, method="POST")
     try:
         with urllib.request.urlopen(request, timeout=40) as response:
             result = json.loads(response.read())
@@ -172,7 +173,7 @@ async def analyze(job_description: Annotated[str, Form()], resumes: Annotated[li
     payload["max_completion_tokens" if config["provider"] == "groq" else "max_tokens"] = 2800
     if config["provider"] == "groq":
         payload["include_reasoning"] = False
-    request = urllib.request.Request(config["url"], data=json.dumps(payload).encode(), headers={"Authorization": f"Bearer {config['key']}", "Content-Type": "application/json"}, method="POST")
+    request = urllib.request.Request(config["url"], data=json.dumps(payload).encode(), headers={"Authorization": f"Bearer {config['key']}", "Content-Type": "application/json", "User-Agent": "TalentLens/1.0"}, method="POST")
     try:
         # Render's free web service has a request lifetime limit. Return the
         # transparent local estimate before the platform closes slow model calls.
