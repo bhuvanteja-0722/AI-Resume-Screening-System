@@ -13,3 +13,7 @@ services:
         value: openai/gpt-oss-20b
       - key: NVIDIA_API_KEY
         sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: GROQ_API_KEY
+        sync: false
