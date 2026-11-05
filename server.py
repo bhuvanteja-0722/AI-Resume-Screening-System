@@ -144,7 +144,9 @@ async def analyze(job_description: Annotated[str, Form()], resumes: Annotated[li
     ], "temperature": 0.2, "max_tokens": 2800, "reasoning_effort": "low", "stream": False, "response_format": {"type": "json_object"}}
     request = urllib.request.Request("https://integrate.api.nvidia.com/v1/chat/completions", data=json.dumps(payload).encode(), headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"}, method="POST")
     try:
-        with urllib.request.urlopen(request, timeout=90) as response:
+        # Render's free web service has a request lifetime limit. Return the
+        # transparent local estimate before the platform closes slow NVIDIA calls.
+        with urllib.request.urlopen(request, timeout=40) as response:
             result = json.loads(response.read())
         content = result["choices"][0]["message"]["content"]
         content = re.sub(r"^```(?:json)?\s*|\s*```$", "", content.strip())
