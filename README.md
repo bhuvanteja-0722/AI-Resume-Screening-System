@@ -22,7 +22,7 @@ A recruiter dashboard with a working local demo flow and optional NVIDIA NIM int
 
 5. Open http://127.0.0.1:8000.
 
-The NVIDIA credential is used only by the local server and is never sent to the browser. When NVIDIA is enabled, extracted resume text is sent to the configured NVIDIA endpoint. The default model is `openai/gpt-oss-20b`; change `NVIDIA_MODEL` in `.env` to select another available endpoint. NVIDIA endpoint availability, quotas, and terms can change; check the model page.
+The NVIDIA credential is used only by the local server and is never sent to the browser. When NVIDIA is enabled, extracted resume text is sent to the configured NVIDIA endpoint. The default model is `openai/gpt-oss-20b`; change `NVIDIA_MODEL` in `.env` to select another available endpoint. If the endpoint times out or is temporarily unavailable, the app returns a clearly labeled local keyword estimate instead of a server error. NVIDIA endpoint availability, quotas, and terms can change; check the model page.
 
 The dashboard starts with sample candidate rows for preview. Uploading resumes replaces those rows with this screening's results. Local keyword scores are not semantic and can miss equivalent terms; NVIDIA results can also be wrong. Do not use a match score as a hiring decision: review source resumes and make decisions with human oversight.
 

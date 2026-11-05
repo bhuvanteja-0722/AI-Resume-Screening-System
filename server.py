@@ -44,6 +44,11 @@ def local_score(job_description: str, resume_text: str, filename: str) -> dict:
         summary = "The local keyword scan found few direct term matches. Review the resume manually; equivalent skills may be described in different language."
     return {"name": name[:100], "email": email.group(0) if email else "", "role": "Resume submitted", "score": score, "skills": skills, "summary": summary, "filename": filename}
 
+def local_results(job_description: str, candidates: list[dict]) -> list[dict]:
+    results = [local_score(job_description, candidate["text"], candidate["filename"]) for candidate in candidates]
+    results.sort(key=lambda candidate: candidate["score"], reverse=True)
+    return results
+
 def extract_text(filename: str, content: bytes) -> str:
     suffix = Path(filename).suffix.lower()
     try:
@@ -89,10 +94,10 @@ def draft_job(payload: dict = Body(...)):
         data=json.dumps({"model": os.getenv("NVIDIA_MODEL", "openai/gpt-oss-20b"), "messages": [
             {"role": "system", "content": "Write clear, inclusive job descriptions. Follow the requested format."},
             {"role": "user", "content": prompt}
-        ], "temperature": 0.35, "max_tokens": 900, "stream": False}).encode(),
+        ], "temperature": 0.25, "max_tokens": 600, "reasoning_effort": "low", "stream": False}).encode(),
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"}, method="POST")
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
+        with urllib.request.urlopen(request, timeout=40) as response:
             result = json.loads(response.read())
         text = result["choices"][0]["message"]["content"].strip()
         if not text:
@@ -100,9 +105,13 @@ def draft_job(payload: dict = Body(...)):
         return {"job_description": text[:10000]}
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode(errors="replace")[:600]
+        if exc.code == 429 or exc.code >= 500:
+            return {"job_description": local_draft(role), "mode": "local_demo", "notice": "NVIDIA is temporarily unavailable; a local starter description is ready to edit."}
         raise HTTPException(exc.code if exc.code in (400, 401, 403, 429) else 502, f"NVIDIA API request failed: {detail}") from exc
     except urllib.error.URLError as exc:
-        raise HTTPException(502, "Could not connect to NVIDIA. Check your network and try again.") from exc
+        return {"job_description": local_draft(role), "mode": "local_demo", "notice": "NVIDIA could not be reached; a local starter description is ready to edit."}
+    except TimeoutError:
+        return {"job_description": local_draft(role), "mode": "local_demo", "notice": "NVIDIA took too long to respond; a local starter description is ready to edit."}
     except (KeyError, ValueError, json.JSONDecodeError) as exc:
         raise HTTPException(502, "NVIDIA returned an unreadable response. Please retry.") from exc
 
@@ -123,9 +132,7 @@ async def analyze(job_description: Annotated[str, Form()], resumes: Annotated[li
             raise HTTPException(422, f"No readable text found in {file.filename}. For scanned PDFs, run OCR first or upload a text-based PDF.")
         candidates.append({"filename": file.filename, "text": text[:18000]})
     if not key:
-        local_results = [local_score(job_description, candidate["text"], candidate["filename"]) for candidate in candidates]
-        local_results.sort(key=lambda candidate: candidate["score"], reverse=True)
-        return {"candidates": local_results, "mode": "local_demo"}
+        return {"candidates": local_results(job_description, candidates), "mode": "local_demo"}
     prompt = {
         "job_description": job_description[:12000],
         "candidates": candidates,
@@ -134,7 +141,7 @@ async def analyze(job_description: Annotated[str, Form()], resumes: Annotated[li
     payload = {"model": os.getenv("NVIDIA_MODEL", "openai/gpt-oss-20b"), "messages": [
         {"role": "system", "content": "You are an evidence-focused recruiting assistant. Return valid JSON only; no markdown."},
         {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)}
-    ], "temperature": 0.2, "max_tokens": 3500, "stream": False, "response_format": {"type": "json_object"}}
+    ], "temperature": 0.2, "max_tokens": 2800, "reasoning_effort": "low", "stream": False, "response_format": {"type": "json_object"}}
     request = urllib.request.Request("https://integrate.api.nvidia.com/v1/chat/completions", data=json.dumps(payload).encode(), headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"}, method="POST")
     try:
         with urllib.request.urlopen(request, timeout=90) as response:
@@ -156,9 +163,13 @@ async def analyze(job_description: Annotated[str, Form()], resumes: Annotated[li
         return {"candidates": normalized}
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode(errors="replace")[:600]
+        if exc.code == 429 or exc.code >= 500:
+            return {"candidates": local_results(job_description, candidates), "mode": "local_demo", "notice": "NVIDIA is temporarily unavailable; these are local keyword estimates. Review each resume manually."}
         raise HTTPException(exc.code if exc.code in (400, 401, 403, 429) else 502, f"NVIDIA API request failed: {detail}") from exc
     except urllib.error.URLError as exc:
-        raise HTTPException(502, "Could not connect to NVIDIA. Check your network and try again.") from exc
+        return {"candidates": local_results(job_description, candidates), "mode": "local_demo", "notice": "NVIDIA could not be reached; these are local keyword estimates. Review each resume manually."}
+    except TimeoutError:
+        return {"candidates": local_results(job_description, candidates), "mode": "local_demo", "notice": "NVIDIA took too long to respond; these are local keyword estimates. Review each resume manually."}
     except (KeyError, ValueError, json.JSONDecodeError) as exc:
         raise HTTPException(502, "NVIDIA returned an unreadable response. Please retry.") from exc
 
