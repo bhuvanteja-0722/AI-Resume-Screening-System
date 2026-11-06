@@ -14,12 +14,12 @@
 <body>
   <aside class="sidebar">
     <a class="brand" href="#"><span class="brand-mark"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M8 25.5 17.8 7l10.2 18.5h-7.1l-3.2-6.2-3.1 6.2H8Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M6 29h24" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span><span>talent<span class="brand-light">lens</span></span></a>
-    <div class="workspace"><span class="workspace-icon">N</span><span><small>WORKSPACE</small><strong>Northstar Labs</strong></span><span class="chevron">⌄</span></div>
+    <div class="workspace-wrap"><button type="button" class="workspace" id="workspace-button" aria-expanded="false" aria-haspopup="menu"><span class="workspace-icon" id="workspace-initial">N</span><span><small>WORKSPACE</small><strong id="workspace-name">Northstar Labs</strong></span><span class="chevron">⌄</span></button><div class="account-menu" id="workspace-menu" role="menu" hidden><div class="menu-heading">YOUR WORKSPACES</div><div id="workspace-options"></div><button type="button" class="menu-action" data-action="add-workspace">＋ Add workspace</button><button type="button" class="menu-action" data-action="rename-workspace">✎ Rename workspace</button></div></div>
     <div class="nav-label">WORKSPACE</div>
     <nav class="nav"><a class="active" href="#"><span class="nav-icon">▦</span>Overview</a><a href="#candidates"><span class="nav-icon">♙</span>Candidates <span class="nav-count">24</span></a><a href="#job"><span class="nav-icon">▤</span>Job openings <span class="nav-count">3</span></a><a href="#reports"><span class="nav-icon">◷</span>Reports</a></nav>
     <div class="nav-label manage-label">MANAGE</div>
     <nav class="nav"><a href="#settings"><span class="nav-icon">⚙</span>Settings</a><a href="#help"><span class="nav-icon">?</span>Help center</a></nav>
-    <div class="sidebar-bottom"><div class="plan-card"><span class="plan-dot"></span><strong>Free workspace</strong><p>You're all set to find your next great hire.</p><button type="button" class="upgrade">Explore plans <span>↗</span></button></div><div class="profile"><div class="avatar avatar-you">JD</div><span><strong>Jordan Davis</strong><small>Recruiting lead</small></span><span class="chevron">···</span></div></div>
+    <div class="sidebar-bottom"><div class="plan-card"><span class="plan-dot"></span><strong>Free workspace</strong><p>You're all set to find your next great hire.</p><button type="button" class="upgrade">Explore plans <span>↗</span></button></div><div class="profile-wrap"><button type="button" class="profile" id="profile-button" aria-expanded="false" aria-haspopup="menu"><div class="avatar avatar-you" id="profile-initials">JD</div><span><strong id="profile-name">Jordan Davis</strong><small id="profile-role">Recruiting lead</small></span><span class="chevron">···</span></button><div class="account-menu profile-menu" id="profile-menu" role="menu" hidden><div class="menu-heading">ACCOUNT</div><button type="button" class="menu-action" data-action="edit-profile">✎ Edit profile</button><button type="button" class="menu-action" data-action="add-account">＋ Add account</button><button type="button" class="menu-action" data-action="switch-account">↔ Switch account</button><button type="button" class="menu-action" data-action="settings">⚙ Account settings</button></div></div></div>
   </aside>
 
   <main class="main">
@@ -44,6 +44,7 @@
   </main>
   <div class="toast" id="toast" role="status"></div>
   <dialog id="detail-dialog" class="detail-dialog"><button class="dialog-close" aria-label="Close">×</button><div id="dialog-content"></div></dialog>
+  <dialog id="app-dialog" class="detail-dialog app-dialog"><button class="dialog-close" aria-label="Close">×</button><div id="app-dialog-content"></div></dialog>
   <script src="/app.js"></script>
 </body>
 </html>
